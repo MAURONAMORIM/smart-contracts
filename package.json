@@ -1,0 +1,22 @@
+{
+  "name": "keyrpto",
+  "version": "1.0.0",
+  "description": "Smart contracts for Keyrpto crowdsale",
+  "main": "n/a",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/gedrimsa/keyrpto.git"
+  },
+  "author": "Gediminas Rimsa <gediminas@argilis.lt>",
+  "license": "ISC",
+  "homepage": "https://keyrpto.com",
+  "dependencies": {
+    "zeppelin-solidity": "^1.5.0"
+  }
+}
