@@ -13,6 +13,8 @@ contract KeyrptoToken is MintableToken, Pausable {
   bool public teamTokensMinted = false;
   uint256 public circulationStartTime;
 
+  event Burn(address indexed burnedFrom, uint256 value);
+
   function KeyrptoToken(address _teamWallet) public {
     require(_teamWallet != address(0));
     teamWallet = _teamWallet;
@@ -83,5 +85,18 @@ contract KeyrptoToken is MintableToken, Pausable {
     } else {
       return 0;
     }
+  }
+
+  /*
+   * Copy of BurnableToken#burn
+   * Changes:
+   * - only allow owner to burn tokens and burn from given address, not msg.sender
+   */
+  function burn(address _from, uint256 _value) external onlyOwner {
+    require(_value <= balances[_from]);
+
+    balances[_from] = balances[_from].sub(_value);
+    totalSupply = totalSupply.sub(_value);
+    Burn(_from, _value);
   }
 }

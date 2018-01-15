@@ -85,6 +85,36 @@ contract('KeyrptoToken', function([contractOwner, teamWallet, investor, investor
     });
   });
 
+  describe('Burning of tokens', async function() {
+    beforeEach(async function() {
+      await token.mint(investor, 1000, {from: contractOwner});
+      await token.mintTeamTokens(0, {from: contractOwner});
+      await token.finishMinting();
+    });
+
+    it('should be allowed for contract owner', async function() {
+      const totalSupplyBefore = await token.totalSupply();
+      const investorBalanceBefore = await token.balanceOf(investor);
+
+      const txResult = await token.burn(investor, 127, {from: contractOwner});
+
+      assert.eventValuesEqual(txResult.logs[0], 'Burn', {
+         burnedFrom: investor,
+         value: new BigNumber(127)
+      });
+      assert.deepEqual(await token.totalSupply(), totalSupplyBefore.sub(127));
+      assert.deepEqual(await token.balanceOf(investor), investorBalanceBefore.sub(127));
+    });
+
+    it('should be impossible for address that does not hold tokens', async function() {
+      await assert.evmThrows(token.burn(investor3, 1, {from: contractOwner}));
+    });
+
+    it('should be impossible for non-owner', async function() {
+      await assert.evmThrows(token.burn(investor, 1, {from: investor}));
+    });
+  });
+
   describe('Token transfers', async function() {
     beforeEach(async function() {
       await token.mint(investor, 1000, {from: contractOwner});
