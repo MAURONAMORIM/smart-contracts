@@ -19,6 +19,7 @@ contract('KeyrptoToken', function([contractOwner, teamWallet, investor, investor
 
   beforeEach(async function() {
     token = await KeyrptoToken.new(teamWallet, {from: contractOwner});
+    await token.setTeamWallet(teamWallet, {from: contractOwner});
     await token.pause();
   });
 
@@ -27,6 +28,11 @@ contract('KeyrptoToken', function([contractOwner, teamWallet, investor, investor
     assert.equal(await token.symbol(), 'KYT');
     assert.equal(await token.decimals(), 18);
     assert.equal(await token.teamWallet(), teamWallet);
+  });
+
+  it('should not allow to change team wallet', async function() {
+    await assert.evmThrows(token.setTeamWallet(investor, {from: investor2}));
+    await assert.evmThrows(token.setTeamWallet(investor3, {from: contractOwner}));
   });
 
   it('fallback function should throw', async function() {
