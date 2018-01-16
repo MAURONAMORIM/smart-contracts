@@ -22,14 +22,11 @@ contract KeyrptoToken is MintableToken, Pausable {
     teamWallet = _teamWallet;
   }
 
-  function mintTeamTokens(uint256 _presaleTokens) public onlyOwner canMint {
+  function mintTeamTokens(uint256 _extraTokensMintedDuringPresale) public onlyOwner canMint {
     require(!teamTokensMinted);
 
     teamTokensMinted = true;
-    uint256 totalExtraTokenSupply = 490 * MILLION_TOKENS;
-    uint256 extraTokensMintedDuringPresale = _presaleTokens / 5;
-
-    mint(teamWallet, totalExtraTokenSupply.sub(extraTokensMintedDuringPresale));
+    mint(teamWallet, (490 * MILLION_TOKENS).sub(_extraTokensMintedDuringPresale));
   }
 
   /*

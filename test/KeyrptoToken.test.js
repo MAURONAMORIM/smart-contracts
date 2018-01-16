@@ -45,16 +45,17 @@ contract('KeyrptoToken', function([contractOwner, teamWallet, investor, investor
       const tokensSoldDuringPublicSale = 89412314789;
       await token.mint(investor, tokensSoldDuringPreSale, {from: contractOwner});
       await token.mint(investor2, tokensSoldDuringPublicSale, {from: contractOwner});
+      const totalSupplyBefore = await token.totalSupply();
 
-      const txResult = await token.mintTeamTokens(tokensSoldDuringPreSale, {from: contractOwner});
+      const txResult = await token.mintTeamTokens(63750, {from: contractOwner});
 
-      const expectedTeamTokens = MILLION_TOKENS.times(490).sub(63750);
+      const expectedTeamTokens = MILLION_TOKENS.times(490).minus(63750);
       assert.eventValuesEqual(txResult.logs[0], 'Mint', {
          to: teamWallet,
          amount: expectedTeamTokens
       });
       assert.equal(await token.teamTokensMinted(), true);
-      const expectedTotalSupply = expectedTeamTokens.plus(tokensSoldDuringPreSale + tokensSoldDuringPublicSale);
+      const expectedTotalSupply = totalSupplyBefore.plus(expectedTeamTokens);
       assert.deepEqual(await token.totalSupply(), expectedTotalSupply);
     });
 

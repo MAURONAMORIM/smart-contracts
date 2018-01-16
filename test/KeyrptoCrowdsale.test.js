@@ -22,7 +22,6 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
 
   const crowdsaleArgs = { };
   const RATE = new BigNumber(120000);
-  const CAP = ether(10);
 
   beforeEach(async function() {
     crowdsaleArgs.startTime = blockchainTime.latestTime() + duration.weeks(1);
@@ -32,7 +31,6 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
                                            crowdsaleArgs.mainStartTime,
                                            crowdsaleArgs.endTime,
                                            RATE,
-                                           CAP,
                                            teamWallet, {from: owner});
     token = KeyrptoToken.at(await crowdsale.token());
   });
@@ -43,7 +41,6 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       assert.equal(await crowdsale.mainStartTime(), crowdsaleArgs.mainStartTime);
       assert.equal(await crowdsale.endTime(), crowdsaleArgs.endTime);
       assert.deepEqual(await crowdsale.rate(), RATE);
-      assert.deepEqual(await crowdsale.cap(), CAP);
       assert.equal(await crowdsale.wallet(), teamWallet);
       assert.equal(await crowdsale.owner(), owner);
     });
@@ -217,7 +214,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       await crowdsale.buyTokens(investor2, {value: amount, from: investor2});
       await crowdsale.buyTokens(investor3, {value: amount, from: investor3});
 
-      assert.deepEqual(await crowdsale.tokensSoldDuringPresale(), totalSupplyBefore);
+      assert.deepEqual(await crowdsale.extraTokensMintedDuringPresale(), totalSupplyBefore.div(5));
     });
 
     it('tokens should be sold with minimum transaction value of 0.1 ETH', async function() {
@@ -238,26 +235,33 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
     });
 
     it('tokens should be sold until hard cap is reached', async function() {
+      await crowdsale.buyTokens(investor, {value: ether(0.1), from: investor});
       const newRate = 100000000;                            // 1 ETH = 100M KYT = 1 000 000 USD
       await crowdsale.updateRate(newRate, {from: owner});
-      const remainingToCap = CAP.minus(await crowdsale.weiRaised());
+      const tokenSupplyCap = await crowdsale.tokenSupplyCap();
+      const remainingTokensToCap = tokenSupplyCap.sub(await token.totalSupply());
+      const remainingEthToCap = remainingTokensToCap.div(newRate);
 
-      const txResult = await crowdsale.buyTokens(investor, {value: remainingToCap, from: investor});
+      const txResult = await crowdsale.buyTokens(investor, {value: remainingEthToCap, from: investor});
       assert.eventValuesEqual(txResult.logs[0], 'TokenPurchase', {
          purchaser: investor,
          beneficiary: investor,
-         value: remainingToCap,
-         amount: remainingToCap.mul(newRate)
+         value: remainingEthToCap,
+         amount: remainingTokensToCap
       });
-      assert.deepEqual(await crowdsale.weiRaised(), CAP);
+      assert.deepEqual(await token.totalSupply(), tokenSupplyCap);
+      assert.deepEqual(await crowdsale.tokenSupplyCap(), tokenSupplyCap);
       assert.equal(await crowdsale.hasEnded(), true);
     });
 
     it('transaction exceeding hard-cap should be rejected', async function() {
-      const remainingToCap = CAP.minus(await crowdsale.weiRaised());
-      const amount = remainingToCap.plus(wei(1));
+      const newRate = 100000000;                            // 1 ETH = 100M KYT = 1 000 000 USD
+      await crowdsale.updateRate(newRate, {from: owner});
+      const remainingTokensToCap = (await crowdsale.tokenSupplyCap()).sub(await token.totalSupply());
+      const remainingEthToCap = remainingTokensToCap.div(newRate);
+      const amountToExceedCap = remainingEthToCap.plus(wei(1));
 
-      await assert.evmThrows(crowdsale.buyTokens(investor, {value: amount, from: investor}));
+      await assert.evmThrows(crowdsale.buyTokens(investor, {value: amountToExceedCap, from: investor}));
     });
 
     it('crowdsale should end once main sale time runs out', async function() {
