@@ -16,7 +16,7 @@ const KeyrptoToken = artifacts.require('KeyrptoToken');
 // Constants
 const ONE_TOKEN = new BigNumber('1e+18');
 
-contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, investor3]) {
+contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, investor3, investor4]) {
   let crowdsale;
   let token;
 
@@ -74,11 +74,25 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       await assert.evmThrows(crowdsale.updateRate(3333, {from: investor}));
       assert.deepEqual(await crowdsale.rate(), new BigNumber(2222));
     });
+
+    it('only owner should be able to manage whitelist', async function() {
+      await crowdsale.whitelist(investor, {from: owner});
+      await crowdsale.whitelist(investor2, {from: owner});
+      await crowdsale.blacklist(investor2, {from: owner});
+      assert.equal(await crowdsale.whitelisted(investor), true);
+      assert.equal(await crowdsale.whitelisted(investor2), false);
+
+      await assert.evmThrows(crowdsale.whitelist(investor3, {from: investor}));
+      await assert.evmThrows(crowdsale.blacklist(investor3, {from: investor}));
+    });
   });
 
   describe('Presale has started', async function() {
     beforeEach(async function() {
       await blockchainTime.increaseTimeTo(crowdsaleArgs.startTime);
+      await crowdsale.whitelist(investor, {from: owner});
+      await crowdsale.whitelist(investor2, {from: owner});
+      await crowdsale.whitelist(investor3, {from: owner});
     });
 
     it('tokens should be sold with 20% discount', async function() {
@@ -143,10 +157,31 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       await assert.evmThrows(crowdsale.updateRate(3333, {from: investor}));
       assert.deepEqual(await crowdsale.rate(), new BigNumber(2222));
     });
+
+    it('only owner should be able to manage whitelist', async function() {
+      await crowdsale.blacklist(investor, {from: owner});
+      await crowdsale.blacklist(investor2, {from: owner});
+      await crowdsale.whitelist(investor2, {from: owner});
+      assert.equal(await crowdsale.whitelisted(investor), false);
+      assert.equal(await crowdsale.whitelisted(investor2), true);
+      assert.equal(await crowdsale.whitelisted(investor3), true);
+
+      await assert.evmThrows(crowdsale.whitelist(investor3, {from: investor}));
+      await assert.evmThrows(crowdsale.blacklist(investor3, {from: investor}));
+    });
+
+    it('tokens should not be sold to non-whitelisted addresses', async function() {
+      const amount = ether(0.1);
+
+      await assert.evmThrows(crowdsale.buyTokens(investor4, {value: amount, from: investor4}));
+    });
   });
 
   describe('Main sale has started', async function() {
     beforeEach(async function() {
+      await crowdsale.whitelist(investor, {from: owner});
+      await crowdsale.whitelist(investor2, {from: owner});
+      await crowdsale.whitelist(investor3, {from: owner});
       await blockchainTime.increaseTimeTo(crowdsaleArgs.startTime);
       await crowdsale.buyTokens(investor3, {value: ether(2), from: investor3});
       await crowdsale.buyTokens(investor2, {value: ether(0.1), from: investor2});
@@ -230,10 +265,31 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
 
       assert.equal(await crowdsale.hasEnded(), true);
     });
+
+    it('only owner should be able to manage whitelist', async function() {
+      await crowdsale.blacklist(investor, {from: owner});
+      await crowdsale.blacklist(investor2, {from: owner});
+      await crowdsale.whitelist(investor2, {from: owner});
+      assert.equal(await crowdsale.whitelisted(investor), false);
+      assert.equal(await crowdsale.whitelisted(investor2), true);
+      assert.equal(await crowdsale.whitelisted(investor3), true);
+
+      await assert.evmThrows(crowdsale.whitelist(investor3, {from: investor}));
+      await assert.evmThrows(crowdsale.blacklist(investor3, {from: investor}));
+    });
+
+    it('tokens should not be sold to non-whitelisted addresses', async function() {
+      const amount = ether(0.1);
+
+      await assert.evmThrows(crowdsale.buyTokens(investor4, {value: amount, from: investor4}));
+    });
   });
 
   describe('Crowdsale has ended', async function() {
     beforeEach(async function() {
+      await crowdsale.whitelist(investor, {from: owner});
+      await crowdsale.whitelist(investor2, {from: owner});
+      await crowdsale.whitelist(investor3, {from: owner});
       await blockchainTime.increaseTimeTo(crowdsaleArgs.startTime);
       await crowdsale.buyTokens(investor3, {value: ether(2), from: investor3});
       await crowdsale.buyTokens(investor2, {value: ether(0.1), from: investor2});

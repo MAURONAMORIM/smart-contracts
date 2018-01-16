@@ -8,6 +8,8 @@ import "./KeyrptoToken.sol";
 contract KeyrptoCrowdsale is CappedCrowdsale, FinalizableCrowdsale {
   uint256 internal constant ONE_TOKEN = 1e18;
 
+  mapping (address => bool) public whitelist;
+
   uint256 public mainStartTime;
   uint256 public tokensSoldDuringPresale;
 
@@ -47,13 +49,23 @@ contract KeyrptoCrowdsale is CappedCrowdsale, FinalizableCrowdsale {
     rate = _rate;
   }
 
+  function whitelist(address _address) external onlyOwner {
+    whitelist[_address] = true;
+  }
+
+  function blacklist(address _address) external onlyOwner {
+    delete whitelist[_address];
+  }
+
   /*
    * @overrides Crowdsale#buyTokens
    * Changes:
+   * - Added whitelisting requirement
    * - Added minimum purchase amount of 0.1 ETH
    * - Added extra restrictions during presale (max contribution of 2 ETH; total supply of 31.875M KYT)
    */
   function buyTokens(address beneficiary) public payable {
+    require(whitelisted(msg.sender));
     require(msg.value >= 100 finney);
     require(beneficiary != address(0));
     require(validPurchase());
@@ -76,6 +88,10 @@ contract KeyrptoCrowdsale is CappedCrowdsale, FinalizableCrowdsale {
     TokenPurchase(msg.sender, beneficiary, weiAmount, tokens);
 
     forwardFunds();
+  }
+
+  function whitelisted(address _address) public view returns (bool) {
+    return whitelist[_address];
   }
 
   function getRate() internal view returns (uint256) {
