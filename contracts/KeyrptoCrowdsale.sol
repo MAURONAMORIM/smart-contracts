@@ -1,6 +1,5 @@
 pragma solidity ^0.4.18;
 
-import "../node_modules/zeppelin-solidity/contracts/crowdsale/CappedCrowdsale.sol";
 import "../node_modules/zeppelin-solidity/contracts/crowdsale/FinalizableCrowdsale.sol";
 import "../node_modules/zeppelin-solidity/contracts/token/MintableToken.sol";
 import "./KeyrptoToken.sol";
