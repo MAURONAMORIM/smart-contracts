@@ -20,7 +20,6 @@ contract('KeyrptoToken', function([contractOwner, teamWallet, investor, investor
   beforeEach(async function() {
     token = await KeyrptoToken.new(teamWallet, {from: contractOwner});
     await token.setTeamWallet(teamWallet, {from: contractOwner});
-    await token.pause();
   });
 
   it('should have correct state after deployment', async function() {
@@ -28,6 +27,7 @@ contract('KeyrptoToken', function([contractOwner, teamWallet, investor, investor
     assert.equal(await token.symbol(), 'KYT');
     assert.equal(await token.decimals(), 18);
     assert.equal(await token.teamWallet(), teamWallet);
+    assert.equal(await token.paused(), true);
   });
 
   it('should not allow to change team wallet', async function() {

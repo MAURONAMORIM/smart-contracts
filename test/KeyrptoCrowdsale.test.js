@@ -47,6 +47,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
 
     it('crowsdsale should have correct initial state', async function() {
       assert.equal(await crowdsale.weiRaised(), 0);
+      assert.equal(await crowdsale.hasPresaleEnded(), false);
       assert.equal(await crowdsale.isFinalized(), false);
     });
 
@@ -109,6 +110,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       assert.deepEqual(await token.totalSupply(), expectedTokensSold);
       assert.deepEqual(await crowdsale.weiRaised(), amount);
       assert.deepEqual(web3.eth.getBalance(teamWallet), teamWalletBalanceBefore.plus(amount));
+      assert.equal(await crowdsale.hasPresaleEnded(), false);
     });
 
     it('tokens should be sold with minimum transaction value of 0.1 ETH', async function() {
@@ -135,6 +137,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       assert.deepEqual(await token.totalSupply(), new BigNumber(62500000).times(ONE_TOKEN));
       assert.deepEqual(await crowdsale.weiRaised(), ether(5));
       await assert.evmThrows(crowdsale.buyTokens(investor3, {value: ether(0.1), from: investor3}));
+      assert.equal(await crowdsale.hasPresaleEnded(), true);
 
       // sales should continue once main sale starts
       await blockchainTime.increaseTimeTo(crowdsaleArgs.mainStartTime);
@@ -215,6 +218,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       await crowdsale.buyTokens(investor3, {value: amount, from: investor3});
 
       assert.deepEqual(await crowdsale.extraTokensMintedDuringPresale(), totalSupplyBefore.div(5));
+      assert.equal(await crowdsale.hasPresaleEnded(), true);
     });
 
     it('tokens should be sold with minimum transaction value of 0.1 ETH', async function() {
@@ -270,6 +274,21 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       assert.equal(await crowdsale.hasEnded(), true);
     });
 
+    it('finalization should mint correct amount of team tokens when nothing was sold during public sale', async function() {
+      await blockchainTime.increaseTimeTo(crowdsaleArgs.endTime + duration.seconds(1));
+      const totalSupplyBeforeFinalization = await token.totalSupply();
+      const fifthOfPresaleTokens = ether(2.1).mul(RATE).div(4);
+
+      const txResult = await crowdsale.finalize({from: owner});
+
+      const expectedMintedTokens = new BigNumber('490e+6').times(ONE_TOKEN).sub(fifthOfPresaleTokens);
+      assert.deepEqual(await token.totalSupply(), totalSupplyBeforeFinalization.plus(expectedMintedTokens));
+      assert.deepEqual(await token.balanceOf(teamWallet), expectedMintedTokens);
+      assert.equal(await token.mintingFinished(), true);
+      assert.equal(await crowdsale.isFinalized(), true);
+      assert.equal(await token.owner(), teamWallet);
+    });
+
     it('only owner should be able to manage whitelist', async function() {
       await crowdsale.blacklist(investor, {from: owner});
       await crowdsale.blacklist(investor2, {from: owner});
@@ -304,6 +323,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
     });
 
     it('crowsdsale should have correct state', async function() {
+      assert.equal(await crowdsale.hasPresaleEnded(), true);
       assert.equal(await crowdsale.hasEnded(), true);
       assert.equal(await crowdsale.isFinalized(), false);
     });

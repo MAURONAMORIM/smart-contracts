@@ -15,6 +15,10 @@ contract KeyrptoToken is MintableToken, Pausable {
 
   event Burn(address indexed burnedFrom, uint256 value);
 
+  function KeyrptoToken() public {
+    paused = true;
+  }
+
   function setTeamWallet(address _teamWallet) public onlyOwner canMint {
     require(teamWallet == address(0));
     require(_teamWallet != address(0));

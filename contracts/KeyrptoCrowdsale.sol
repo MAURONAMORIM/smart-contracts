@@ -7,6 +7,9 @@ import "./KeyrptoToken.sol";
 contract KeyrptoCrowdsale is FinalizableCrowdsale {
   uint256 internal constant ONE_TOKEN = 1e18;
   uint256 internal constant MILLION_TOKENS = 1e6 * ONE_TOKEN;
+  uint256 internal constant PRESALE_TOKEN_CAP = 62500000 * ONE_TOKEN;
+  uint256 internal constant MAIN_SALE_TOKEN_CAP = 510 * MILLION_TOKENS;
+  uint256 internal constant MINIMUM_CONTRIBUTION_IN_WEI = 100 finney;
 
   mapping (address => bool) public whitelist;
 
@@ -26,7 +29,6 @@ contract KeyrptoCrowdsale is FinalizableCrowdsale {
     mainStartTime = _mainStartTime;
 
     KeyrptoToken(token).setTeamWallet(_wallet);
-    KeyrptoToken(token).pause();
   }
 
   function createTokenContract() internal returns (MintableToken) {
@@ -69,6 +71,10 @@ contract KeyrptoCrowdsale is FinalizableCrowdsale {
 
     require(validPurchase(tokens, _beneficiary));
 
+    if(!presale()) {
+      setExtraTokensMintedDuringPresaleIfNotYetSet();
+    }
+
     if (extraTokensMintedDuringPresale == 0 && !presale()) {
       extraTokensMintedDuringPresale = token.totalSupply() / 5;
     }
@@ -95,13 +101,13 @@ contract KeyrptoCrowdsale is FinalizableCrowdsale {
 
     if (presale()) {
       bool withinPerAddressLimit = (token.balanceOf(_beneficiary) + _tokens) <= getRate().mul(20 ether);
-      bool withinTotalSupplyLimit = totalSupplyAfterTransaction <= 62500000 * ONE_TOKEN;
+      bool withinTotalSupplyLimit = totalSupplyAfterTransaction <= PRESALE_TOKEN_CAP;
       if (!withinPerAddressLimit || !withinTotalSupplyLimit) {
         return false;
       }
     }
 
-    bool aboveMinContribution = msg.value >= 100 finney;
+    bool aboveMinContribution = msg.value >= MINIMUM_CONTRIBUTION_IN_WEI;
     bool whitelistedSender = whitelisted(msg.sender);
     bool withinCap = totalSupplyAfterTransaction <= tokenSupplyCap();
     return aboveMinContribution && whitelistedSender && withinCap && super.validPurchase();
@@ -130,12 +136,29 @@ contract KeyrptoCrowdsale is FinalizableCrowdsale {
   }
 
   function tokenSupplyCap() public view returns (uint256) {
-    return 510 * MILLION_TOKENS + extraTokensMintedDuringPresale;
+    return MAIN_SALE_TOKEN_CAP + extraTokensMintedDuringPresale;
   }
 
   function finalization() internal {
+    setExtraTokensMintedDuringPresaleIfNotYetSet();
+
     KeyrptoToken(token).mintTeamTokens(extraTokensMintedDuringPresale);
     token.finishMinting();
     token.transferOwnership(wallet);
+  }
+
+  function setExtraTokensMintedDuringPresaleIfNotYetSet() internal {
+    if (extraTokensMintedDuringPresale == 0) {
+      extraTokensMintedDuringPresale = token.totalSupply() / 5;
+    }
+  }
+
+  function hasPresaleEnded() external view returns (bool) {
+    if (!presale()) {
+      return true;
+    }
+
+    uint256 minPurchaseInTokens = MINIMUM_CONTRIBUTION_IN_WEI.mul(getRate());
+    return token.totalSupply() + minPurchaseInTokens > PRESALE_TOKEN_CAP;
   }
 }
