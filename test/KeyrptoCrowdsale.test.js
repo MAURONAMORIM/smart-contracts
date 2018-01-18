@@ -117,23 +117,23 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       await assert.evmThrows(crowdsale.buyTokens(investor, {value: amount, from: investor}));
     });
 
-    it('tokens should be sold with maximum investment of 2 ETH per address', async function() {
-      const initialAmount = ether(1.90001);
+    it('tokens should be sold with maximum investment of 20 ETH per address', async function() {
+      const initialAmount = ether(19.90001);
       await crowdsale.buyTokens(investor, {value: initialAmount, from: investor});
       const amount = ether(0.1);
 
       await assert.evmThrows(crowdsale.buyTokens(investor, {value: amount, from: investor}));
     });
 
-    it('tokens should be sold with hard cap of 31.875M tokens during presale', async function() {
+    it('tokens should be sold with hard cap of 62.5M tokens during presale', async function() {
       await crowdsale.updateRate(10000000, {from: owner});      // 1 ETH = 10M KYT = 100 000 USD
-      await crowdsale.buyTokens(investor, {value: ether(2), from: investor});
+      await crowdsale.buyTokens(investor, {value: ether(4), from: investor});
 
-      await assert.evmThrows(crowdsale.buyTokens(investor2, {value: ether(0.56), from: investor2}));
-      await crowdsale.buyTokens(investor2, {value: ether(0.55), from: investor2})
+      await assert.evmThrows(crowdsale.buyTokens(investor2, {value: ether(1.01), from: investor2}));
+      await crowdsale.buyTokens(investor2, {value: ether(1), from: investor2})
 
-      assert.deepEqual(await token.totalSupply(), new BigNumber(31875000).times(ONE_TOKEN));
-      assert.deepEqual(await crowdsale.weiRaised(), ether(2.55));
+      assert.deepEqual(await token.totalSupply(), new BigNumber(62500000).times(ONE_TOKEN));
+      assert.deepEqual(await crowdsale.weiRaised(), ether(5));
       await assert.evmThrows(crowdsale.buyTokens(investor3, {value: ether(0.1), from: investor3}));
 
       // sales should continue once main sale starts
@@ -141,7 +141,7 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
 
       await crowdsale.buyTokens(investor3, {value: ether(0.1), from: investor3});
 
-      assert.deepEqual(await crowdsale.weiRaised(), ether(2.65));
+      assert.deepEqual(await crowdsale.weiRaised(), ether(5.1));
     });
 
     it('tokens should not be bought via fallback function', async function() {
@@ -224,13 +224,13 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
     });
 
     it('tokens should be sold with no maximum investment', async function() {
-      const txResult = await crowdsale.buyTokens(investor, {value: ether(5), from: investor3});
+      const txResult = await crowdsale.buyTokens(investor, {value: ether(21), from: investor3});
 
       assert.eventValuesEqual(txResult.logs[0], 'TokenPurchase', {
          purchaser: investor3,
          beneficiary: investor,
-         value: ether(5),
-         amount: ether(5).mul(RATE)
+         value: ether(21),
+         amount: ether(21).mul(RATE)
       });
     });
 

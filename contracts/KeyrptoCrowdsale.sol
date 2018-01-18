@@ -87,15 +87,15 @@ contract KeyrptoCrowdsale is FinalizableCrowdsale {
    * Changes:
    * - Added restriction to sell only to whitelisted addresses
    * - Added minimum purchase amount of 0.1 ETH
-   * - Added presale restriction: max contribution of 2 ETH per address
-   * - Added presale restriction: max total supply of 31.875M KYT
+   * - Added presale restriction: max contribution of 20 ETH per address
+   * - Added presale restriction: max total supply of 62.5M KYT
    */
   function validPurchase(uint256 _tokens, address _beneficiary) internal view returns (bool) {
     uint256 totalSupplyAfterTransaction = token.totalSupply() + _tokens;
 
     if (presale()) {
-      bool withinPerAddressLimit = (token.balanceOf(_beneficiary) + _tokens) <= getRate().mul(2 ether);
-      bool withinTotalSupplyLimit = totalSupplyAfterTransaction <= 31875000 * ONE_TOKEN;
+      bool withinPerAddressLimit = (token.balanceOf(_beneficiary) + _tokens) <= getRate().mul(20 ether);
+      bool withinTotalSupplyLimit = totalSupplyAfterTransaction <= 62500000 * ONE_TOKEN;
       if (!withinPerAddressLimit || !withinTotalSupplyLimit) {
         return false;
       }
