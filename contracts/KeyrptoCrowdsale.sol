@@ -35,13 +35,6 @@ contract KeyrptoCrowdsale is FinalizableCrowdsale {
     return new KeyrptoToken();
   }
 
-  /*
-   * Disable fallback function
-   */
-  function() external payable {
-    revert();
-  }
-
   function updateRate(uint256 _rate) external onlyOwner {
     require(_rate > 0);
     require(now < endTime);

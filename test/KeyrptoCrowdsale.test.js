@@ -113,6 +113,26 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       assert.equal(await crowdsale.hasPresaleEnded(), false);
     });
 
+    it('tokens should be sold via fallback function', async function() {
+      const teamWalletBalanceBefore = web3.eth.getBalance(teamWallet);
+      const amount = ether(0.1);
+
+      const txResult = await crowdsale.sendTransaction({value: amount, from: investor});
+
+      const expectedTokensSold = amount.mul(RATE).mul(1.25);
+      assert.eventValuesEqual(txResult.logs[0], 'TokenPurchase', {
+         purchaser: investor,
+         beneficiary: investor,
+         value: amount,
+         amount: expectedTokensSold
+      });
+      assert.deepEqual(await token.balanceOf(investor), expectedTokensSold);
+      assert.deepEqual(await token.totalSupply(), expectedTokensSold);
+      assert.deepEqual(await crowdsale.weiRaised(), amount);
+      assert.deepEqual(web3.eth.getBalance(teamWallet), teamWalletBalanceBefore.plus(amount));
+      assert.equal(await crowdsale.hasPresaleEnded(), false);
+    });
+
     it('tokens should be sold with minimum transaction value of 0.1 ETH', async function() {
       const amount = ether(0.099999);
 
@@ -145,10 +165,6 @@ contract('KeyrptoCrowdsale', function ([owner, teamWallet, investor, investor2, 
       await crowdsale.buyTokens(investor3, {value: ether(0.1), from: investor3});
 
       assert.deepEqual(await crowdsale.weiRaised(), ether(5.1));
-    });
-
-    it('tokens should not be bought via fallback function', async function() {
-      await assert.evmThrows(crowdsale.sendTransaction({value: ether(1), from: investor}));
     });
 
     it('only owner should be able to update rate', async function() {
