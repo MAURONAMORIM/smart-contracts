@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import '../node_modules/zeppelin-solidity/contracts/token/MintableToken.sol';
+import '../node_modules/zeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
 import '../node_modules/zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 
 contract KeyrptoToken is MintableToken, Pausable {
@@ -99,7 +99,7 @@ contract KeyrptoToken is MintableToken, Pausable {
     require(_value <= balances[_from]);
 
     balances[_from] = balances[_from].sub(_value);
-    totalSupply = totalSupply.sub(_value);
+    totalSupply_ = totalSupply_.sub(_value);
     Burn(_from, _value);
   }
 }
